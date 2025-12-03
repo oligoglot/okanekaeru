@@ -1,0 +1,25 @@
+{
+  "name": "okanekaeru",
+  "version": "1.0.0",
+  "description": "Compare direct vs intermediate currency transfers to find the better option",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "currency",
+    "exchange-rate",
+    "transfer",
+    "forex",
+    "money"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}

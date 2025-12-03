@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Okane Kaeru - JPY to INR Transfer Optimizer</title>
+    <title>Currency Transfer Optimizer</title>
     <style>
         * {
             box-sizing: border-box;
@@ -44,7 +44,7 @@
             margin-bottom: 8px;
             color: #333;
         }
-        input {
+        input, select {
             width: 100%;
             padding: 12px 16px;
             border: 2px solid #e0e0e0;
@@ -52,9 +52,18 @@
             font-size: 1.1rem;
             margin-bottom: 16px;
         }
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: #667eea;
+        }
+        .currency-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .currency-row > div {
+            display: flex;
+            flex-direction: column;
         }
         button {
             width: 100%;
@@ -74,6 +83,7 @@
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
         .rates {
             display: grid;
@@ -170,140 +180,50 @@
             color: #999;
             margin-top: 12px;
         }
+        .explanation {
+            background: #e3f2fd;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #1565c0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>💴 Okane Kaeru</h1>
-        <p class="subtitle">Compare JPY→INR vs JPY→USD→INR transfers</p>
+        <h1>💱 Currency Transfer Optimizer</h1>
+        <p class="subtitle">Compare direct vs intermediate currency transfers</p>
         
         <div class="card">
-            <label for="amount">Amount in JPY</label>
-            <input type="number" id="amount" value="15000000" placeholder="Enter amount in JPY">
+            <div class="explanation">
+                Compare sending money as <strong>Source → Target</strong> directly vs converting to an <strong>Intermediate</strong> currency first.
+            </div>
+            
+            <div class="currency-row">
+                <div>
+                    <label for="source">Source</label>
+                    <select id="source"></select>
+                </div>
+                <div>
+                    <label for="intermediate">Intermediate</label>
+                    <select id="intermediate"></select>
+                </div>
+                <div>
+                    <label for="target">Target</label>
+                    <select id="target"></select>
+                </div>
+            </div>
+            
+            <label for="amount">Amount</label>
+            <input type="number" id="amount" value="1000000" placeholder="Enter amount">
+            
             <button id="compare" onclick="compare()">Compare Transfer Options</button>
         </div>
 
         <div id="results"></div>
     </div>
 
-    <script>
-        const API_BASE = 'https://api.exchangerate-api.com/v4/latest';
-        
-        async function fetchRates() {
-            const [jpyRates, usdRates] = await Promise.all([
-                fetch(`${API_BASE}/JPY`).then(r => r.json()),
-                fetch(`${API_BASE}/USD`).then(r => r.json())
-            ]);
-            
-            return {
-                jpyToUsd: jpyRates.rates.USD,
-                jpyToInr: jpyRates.rates.INR,
-                usdToInr: usdRates.rates.INR,
-                timestamp: new Date(jpyRates.time_last_updated * 1000)
-            };
-        }
-        
-        function formatCurrency(amount, currency) {
-            return new Intl.NumberFormat('en-IN', {
-                style: 'currency',
-                currency: currency,
-                maximumFractionDigits: 0
-            }).format(amount);
-        }
-        
-        function formatRate(rate, decimals = 6) {
-            return rate.toFixed(decimals);
-        }
-        
-        async function compare() {
-            const btn = document.getElementById('compare');
-            const resultsDiv = document.getElementById('results');
-            const amount = parseFloat(document.getElementById('amount').value);
-            
-            if (!amount || amount <= 0) {
-                resultsDiv.innerHTML = '<div class="card error">Please enter a valid amount</div>';
-                return;
-            }
-            
-            btn.disabled = true;
-            btn.textContent = 'Fetching rates...';
-            resultsDiv.innerHTML = '<div class="card loading">Loading exchange rates...</div>';
-            
-            try {
-                const rates = await fetchRates();
-                
-                // Option 1: JPY → INR (direct)
-                const directInr = amount * rates.jpyToInr;
-                
-                // Option 2: JPY → USD → INR
-                const usdAmount = amount * rates.jpyToUsd;
-                const viaUsdInr = usdAmount * rates.usdToInr;
-                
-                // Determine winner
-                const directWins = directInr >= viaUsdInr;
-                const difference = Math.abs(directInr - viaUsdInr);
-                const percentDiff = (difference / Math.min(directInr, viaUsdInr) * 100).toFixed(2);
-                
-                resultsDiv.innerHTML = `
-                    <div class="card">
-                        <h3 style="margin-bottom: 16px; color: #333;">Current Exchange Rates</h3>
-                        <div class="rates">
-                            <div class="rate-box">
-                                <div class="label">JPY → USD</div>
-                                <div class="value">${formatRate(rates.jpyToUsd)}</div>
-                            </div>
-                            <div class="rate-box">
-                                <div class="label">JPY → INR</div>
-                                <div class="value">${formatRate(rates.jpyToInr, 4)}</div>
-                            </div>
-                            <div class="rate-box">
-                                <div class="label">USD → INR</div>
-                                <div class="value">${formatRate(rates.usdToInr, 2)}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="result ${directWins ? 'winner' : 'loser'}">
-                            <h3>
-                                Option 1: Send as JPY
-                                ${directWins ? '<span class="badge">BETTER</span>' : ''}
-                            </h3>
-                            <div class="amount">${formatCurrency(directInr, 'INR')}</div>
-                            <div class="detail">
-                                ${formatCurrency(amount, 'JPY')} × ${formatRate(rates.jpyToInr, 4)}
-                            </div>
-                        </div>
-                        
-                        <div class="result ${!directWins ? 'winner' : 'loser'}">
-                            <h3>
-                                Option 2: Send as USD
-                                ${!directWins ? '<span class="badge">BETTER</span>' : ''}
-                            </h3>
-                            <div class="amount">${formatCurrency(viaUsdInr, 'INR')}</div>
-                            <div class="detail">
-                                ${formatCurrency(amount, 'JPY')} → ${formatCurrency(usdAmount, 'USD')} → INR
-                            </div>
-                        </div>
-                        
-                        <div class="difference">
-                            <div>Difference</div>
-                            <div class="value">${formatCurrency(difference, 'INR')} (${percentDiff}%)</div>
-                        </div>
-                        
-                        <div class="timestamp">
-                            Rates as of: ${rates.timestamp.toLocaleString()}
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                resultsDiv.innerHTML = `<div class="card error">Error fetching rates: ${error.message}</div>`;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Compare Transfer Options';
-            }
-        }
-        
-        // Run comparison on load
-        compare();
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
