@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okane Kaeru - JPY to INR Transfer Optimizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .rates {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .rate-box {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .rate-box .label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .rate-box .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+        }
+        .result {
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+        .result.winner {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+        }
+        .result.loser {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+        }
+        .result h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .result.winner h3 {
+            color: #2e7d32;
+        }
+        .result.loser h3 {
+            color: #666;
+        }
+        .result .amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .result.winner .amount {
+            color: #2e7d32;
+        }
+        .result .detail {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 4px;
+        }
+        .badge {
+            background: #4caf50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        .difference {
+            text-align: center;
+            padding: 16px;
+            background: #fff3e0;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        .difference .value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e65100;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .timestamp {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💴 Okane Kaeru</h1>
+        <p class="subtitle">Compare JPY→INR vs JPY→USD→INR transfers</p>
+        
+        <div class="card">
+            <label for="amount">Amount in JPY</label>
+            <input type="number" id="amount" value="15000000" placeholder="Enter amount in JPY">
+            <button id="compare" onclick="compare()">Compare Transfer Options</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.exchangerate-api.com/v4/latest';
+        
+        async function fetchRates() {
+            const [jpyRates, usdRates] = await Promise.all([
+                fetch(`${API_BASE}/JPY`).then(r => r.json()),
+                fetch(`${API_BASE}/USD`).then(r => r.json())
+            ]);
+            
+            return {
+                jpyToUsd: jpyRates.rates.USD,
+                jpyToInr: jpyRates.rates.INR,
+                usdToInr: usdRates.rates.INR,
+                timestamp: new Date(jpyRates.time_last_updated * 1000)
+            };
+        }
+        
+        function formatCurrency(amount, currency) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: currency,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+        
+        function formatRate(rate, decimals = 6) {
+            return rate.toFixed(decimals);
+        }
+        
+        async function compare() {
+            const btn = document.getElementById('compare');
+            const resultsDiv = document.getElementById('results');
+            const amount = parseFloat(document.getElementById('amount').value);
+            
+            if (!amount || amount <= 0) {
+                resultsDiv.innerHTML = '<div class="card error">Please enter a valid amount</div>';
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Fetching rates...';
+            resultsDiv.innerHTML = '<div class="card loading">Loading exchange rates...</div>';
+            
+            try {
+                const rates = await fetchRates();
+                
+                // Option 1: JPY → INR (direct)
+                const directInr = amount * rates.jpyToInr;
+                
+                // Option 2: JPY → USD → INR
+                const usdAmount = amount * rates.jpyToUsd;
+                const viaUsdInr = usdAmount * rates.usdToInr;
+                
+                // Determine winner
+                const directWins = directInr >= viaUsdInr;
+                const difference = Math.abs(directInr - viaUsdInr);
+                const percentDiff = (difference / Math.min(directInr, viaUsdInr) * 100).toFixed(2);
+                
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h3 style="margin-bottom: 16px; color: #333;">Current Exchange Rates</h3>
+                        <div class="rates">
+                            <div class="rate-box">
+                                <div class="label">JPY → USD</div>
+                                <div class="value">${formatRate(rates.jpyToUsd)}</div>
+                            </div>
+                            <div class="rate-box">
+                                <div class="label">JPY → INR</div>
+                                <div class="value">${formatRate(rates.jpyToInr, 4)}</div>
+                            </div>
+                            <div class="rate-box">
+                                <div class="label">USD → INR</div>
+                                <div class="value">${formatRate(rates.usdToInr, 2)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="result ${directWins ? 'winner' : 'loser'}">
+                            <h3>
+                                Option 1: Send as JPY
+                                ${directWins ? '<span class="badge">BETTER</span>' : ''}
+                            </h3>
+                            <div class="amount">${formatCurrency(directInr, 'INR')}</div>
+                            <div class="detail">
+                                ${formatCurrency(amount, 'JPY')} × ${formatRate(rates.jpyToInr, 4)}
+                            </div>
+                        </div>
+                        
+                        <div class="result ${!directWins ? 'winner' : 'loser'}">
+                            <h3>
+                                Option 2: Send as USD
+                                ${!directWins ? '<span class="badge">BETTER</span>' : ''}
+                            </h3>
+                            <div class="amount">${formatCurrency(viaUsdInr, 'INR')}</div>
+                            <div class="detail">
+                                ${formatCurrency(amount, 'JPY')} → ${formatCurrency(usdAmount, 'USD')} → INR
+                            </div>
+                        </div>
+                        
+                        <div class="difference">
+                            <div>Difference</div>
+                            <div class="value">${formatCurrency(difference, 'INR')} (${percentDiff}%)</div>
+                        </div>
+                        
+                        <div class="timestamp">
+                            Rates as of: ${rates.timestamp.toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="card error">Error fetching rates: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Compare Transfer Options';
+            }
+        }
+        
+        // Run comparison on load
+        compare();
+    </script>
+</body>
+</html>
