@@ -1,4 +1,11 @@
-const { calculateTransfer, formatRate, formatCurrency, CURRENCIES } = require('./app.js');
+const { 
+    calculateTransfer, 
+    formatRate, 
+    formatCurrency, 
+    CURRENCIES,
+    analyzetrend,
+    generateSchedule
+} = require('./app.js');
 
 describe('calculateTransfer', () => {
     test('calculates direct and intermediate transfers correctly', () => {
@@ -102,5 +109,135 @@ describe('CURRENCIES', () => {
 
     test('has at least 20 currencies', () => {
         expect(CURRENCIES.length).toBeGreaterThanOrEqual(20);
+    });
+});
+
+describe('analyzetrend', () => {
+    test('detects upward trend', () => {
+        const rates = {
+            '2024-01-01': 80,
+            '2024-01-02': 82,
+            '2024-01-03': 85,
+            '2024-01-04': 88,
+            '2024-01-05': 90
+        };
+        const result = analyzetrend(rates);
+        expect(result.direction).toBe('up');
+        expect(result.change).toBeGreaterThan(0);
+    });
+
+    test('detects downward trend', () => {
+        const rates = {
+            '2024-01-01': 90,
+            '2024-01-02': 88,
+            '2024-01-03': 85,
+            '2024-01-04': 82,
+            '2024-01-05': 80
+        };
+        const result = analyzetrend(rates);
+        expect(result.direction).toBe('down');
+        expect(result.change).toBeLessThan(0);
+    });
+
+    test('detects stable trend', () => {
+        const rates = {
+            '2024-01-01': 85.0,
+            '2024-01-02': 85.1,
+            '2024-01-03': 84.9,
+            '2024-01-04': 85.2,
+            '2024-01-05': 85.0
+        };
+        const result = analyzetrend(rates);
+        expect(result.direction).toBe('stable');
+    });
+
+    test('calculates min, max, and average', () => {
+        const rates = {
+            '2024-01-01': 80,
+            '2024-01-02': 90,
+            '2024-01-03': 100
+        };
+        const result = analyzetrend(rates);
+        expect(result.min).toBe(80);
+        expect(result.max).toBe(100);
+        expect(result.avg).toBe(90);
+    });
+
+    test('calculates volatility', () => {
+        const rates = {
+            '2024-01-01': 80,
+            '2024-01-02': 90,
+            '2024-01-03': 100
+        };
+        const result = analyzetrend(rates);
+        expect(result.volatility).toBeCloseTo(22.22, 1);
+    });
+
+    test('handles single value', () => {
+        const rates = { '2024-01-01': 85 };
+        const result = analyzetrend(rates);
+        expect(result.direction).toBe('stable');
+        expect(result.change).toBe(0);
+    });
+});
+
+describe('generateSchedule', () => {
+    test('generates correct number of transfers based on cap', () => {
+        const amount = 15000000;
+        const sourceToIntermediate = 0.0067;
+        const transferCap = 10000;
+        const spreadDays = 30;
+        
+        const result = generateSchedule(amount, sourceToIntermediate, transferCap, spreadDays, {}, 'JPY', 'USD');
+        
+        const totalInIntermediate = amount * sourceToIntermediate;
+        const expectedTransfers = Math.ceil(totalInIntermediate / transferCap);
+        
+        expect(result.numTransfers).toBe(expectedTransfers);
+        expect(result.schedule.length).toBe(expectedTransfers);
+    });
+
+    test('last transfer handles remaining amount', () => {
+        const amount = 1500000;
+        const sourceToIntermediate = 0.01;
+        const transferCap = 10000;
+        const spreadDays = 30;
+        
+        const result = generateSchedule(amount, sourceToIntermediate, transferCap, spreadDays, {}, 'JPY', 'USD');
+        
+        const totalIntermediate = result.schedule.reduce((sum, t) => sum + t.intermediateAmount, 0);
+        expect(totalIntermediate).toBeCloseTo(amount * sourceToIntermediate, 2);
+    });
+
+    test('schedule spreads transfers across days', () => {
+        const result = generateSchedule(10000000, 0.01, 10000, 30, {}, 'JPY', 'USD');
+        
+        expect(result.daysBetweenTransfers).toBeGreaterThanOrEqual(1);
+    });
+
+    test('handles exact cap multiple', () => {
+        const amount = 1000000;
+        const sourceToIntermediate = 0.01;
+        const transferCap = 5000;
+        
+        const result = generateSchedule(amount, sourceToIntermediate, transferCap, 30, {}, 'JPY', 'USD');
+        
+        expect(result.numTransfers).toBe(2);
+        expect(result.schedule[0].intermediateAmount).toBe(5000);
+        expect(result.schedule[1].intermediateAmount).toBe(5000);
+    });
+
+    test('marks first transfer as not last', () => {
+        const result = generateSchedule(10000000, 0.01, 10000, 30, {}, 'JPY', 'USD');
+        
+        expect(result.schedule[0].isLast).toBe(false);
+        expect(result.schedule[result.schedule.length - 1].isLast).toBe(true);
+    });
+
+    test('single transfer when amount is under cap', () => {
+        const result = generateSchedule(500000, 0.01, 10000, 30, {}, 'JPY', 'USD');
+        
+        expect(result.numTransfers).toBe(1);
+        expect(result.schedule[0].isLast).toBe(true);
     });
 });
