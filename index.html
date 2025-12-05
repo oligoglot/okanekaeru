@@ -33,7 +33,22 @@
             object-fit: cover;
             border: 3px solid white;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
+            cursor: help;
+        }
+        .photo-credit {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.5);
             margin-bottom: 12px;
+            font-style: italic;
+        }
+        .photo-credit a {
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+        }
+        .photo-credit a:hover {
+            color: white;
+            text-decoration: underline;
         }
         h1 {
             color: white;
@@ -336,6 +351,19 @@
             display: block;
         }
         
+        .disclaimer {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.5;
+        }
+        .disclaimer strong {
+            color: rgba(255,255,255,0.9);
+        }
+        
         @media (max-width: 600px) {
             .currency-row, .two-col {
                 grid-template-columns: 1fr;
@@ -349,7 +377,8 @@
 <body>
     <div class="container">
         <div class="logo-container">
-            <img src="DSCN5107.JPG" alt="Okane Kaeru frog logo" class="logo">
+            <img src="DSCN5107.JPG" alt="Norhayati's Flying Frog" class="logo" title="Norhayati's Flying Frog (Rhacophorus norhayatii) · Photographed in Kuala Lumpur by Sundar Lakshmanan">
+            <div class="photo-credit">Norhayati's Flying Frog · Photo: <a href="https://www.instagram.com/p/CDii9DbABaI/" target="_blank" rel="noopener">Sundar Lakshmanan</a></div>
             <h1>Okane Kaeru</h1>
             <div class="japanese-name">お金カエル</div>
             <p class="subtitle">Compare rates & plan your currency transfers</p>
@@ -401,6 +430,10 @@
         </div>
 
         <div id="results"></div>
+        
+        <div class="disclaimer">
+            <strong>Disclaimer:</strong> This tool is for informational purposes only and does not constitute financial advice. Exchange rates shown are mid-market rates and may differ from actual rates offered by banks and transfer services, which include spreads, fees, and other charges. Always verify rates with your financial institution before making transfers. The authors assume no responsibility for any financial decisions made based on this tool.
+        </div>
     </div>
 
     <script src="app.js"></script>
