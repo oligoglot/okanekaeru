@@ -88,9 +88,12 @@ MIT License - see [LICENSE](LICENSE) file.
 
 ## Name
 
-"Okane Kaeru" (お金カエル) is a play on Japanese words:
+"Okane Kaeru" (お金カエル) is a triple pun in Japanese:
 - お金 (okane) = money
-- 帰る (kaeru) = to return home
-- カエル (kaeru) = frog 🐸
+- 帰る (kaeru) = to return home — *sending money back*
+- 換える (kaeru) = to exchange — *currency conversion*
+- 蛙 (kaeru) = frog 🐸 — *a traditional Japanese lucky charm*
 
-So it means "money returning home" — perfect for international transfers!
+In Japan, people carry frog charms (かえる守り) in their wallets because "okane ga kaeru" can mean both "money returns" and "money is a frog." It's considered good luck for wealth.
+
+This app embodies all three: helping your money return home, through the best exchange rate, with a little luck on your side.
